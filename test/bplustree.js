@@ -115,6 +115,49 @@ describe('BPlusTree', () => {
     assert.deepEqual(tree.fetchRange(4, 20), [2, 3]);
   });
 
+
+	it('should range with limit', () => {
+		let tree = new BPlusTree({ order: 4, debug: true });
+		tree.store(4, 'a');
+		tree.store(4, 'a');
+		tree.store(4, 'b');
+		assert.deepEqual(tree.fetchRange(4, 4), ['a', 'a', 'b']);
+		assert.deepEqual(tree.fetchRange(4, null, { limit: 1 }), ['a']);
+
+		tree = setup();
+		assert.deepEqual(tree.fetchRange(2, 2), ['b']);
+		assert.deepEqual(tree.fetchRange(4, 4), ['d']);
+		assert.deepEqual(tree.fetchRange(4, -4), []);
+		assert.deepEqual(tree.fetchRange(50, 50), []);
+		assert.deepEqual(tree.fetchRange(50, -50), []);
+		assert.deepEqual(tree.fetchRange(1, 2), ['z', 'b']);
+		assert.deepEqual(tree.fetchRange(2, 3), ['b', 'c', 'c2']);
+		assert.deepEqual(tree.fetchRange(1, 3), ['z', 'b', 'c', 'c2']);
+		assert.deepEqual(tree.fetchRange(2, 4), ['b', 'c', 'c2', 'd']);
+		assert.deepEqual(tree.fetchRange(1, 4), ['z', 'b', 'c', 'c2', 'd']);
+		assert.deepEqual(tree.fetchRange(1, 5), ['z', 'b', 'c', 'c2', 'd', 'e']);
+		assert.deepEqual(tree.fetchRange(2, 5), ['b', 'c', 'c2', 'd', 'e']);
+		assert.deepEqual(tree.fetchRange(1, 4, { descending: true }), ['z', 'b', 'c', 'c2', 'd'].reverse());
+
+		tree = new BPlusTree({ order: 50, debug: true });
+		tree.store(1, 1);
+		tree.store(1, 2);
+		tree.store(5, 2);
+		tree.store(10, 3);
+		assert.deepEqual(tree.fetchRange(1, 1), [1, 2]);
+		assert.deepEqual(tree.fetchRange(5, 5), [2]);
+		assert.deepEqual(tree.fetchRange(10, 10), [3]);
+		assert.deepEqual(tree.fetchRange(1, 5), [1, 2, 2]);
+		assert.deepEqual(tree.fetchRange(1, 10), [1, 2, 2, 3]);
+		assert.deepEqual(tree.fetchRange(1, 11), [1, 2, 2, 3]);
+		assert.deepEqual(tree.fetchRange(-1, 11), [1, 2, 2, 3]);
+		assert.deepEqual(tree.fetchRange(5, 10), [2, 3]);
+		assert.deepEqual(tree.fetchRange(1, 2), [1, 2]);
+		assert.deepEqual(tree.fetchRange(1, 20), [1, 2, 2, 3]);
+		assert.deepEqual(tree.fetchRange(-20, 20), [1, 2, 2, 3]);
+		assert.deepEqual(tree.fetchRange(4, 20), [2, 3]);
+	});
+
   it('should check', () => {
     const tree = setup();
     assert(tree.check());

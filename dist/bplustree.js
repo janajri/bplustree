@@ -1,28 +1,25 @@
 'use strict';
 
-var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 /** Class representing a B+ Tree. */
-
-var BPlusTree = (function () {
+var BPlusTree = function () {
   /**
    * @param {Object} options
    * @param {number} [options.order=6] - The tree order (or branching factor or node capacity)
    * @param {boolean} [options.debug=false] - Check tree invariants after each insert / remove
    * @param {string} [options.cmpFn=numericComparison] - Comparison function to use
    */
-
   function BPlusTree() {
-    var _ref = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
-
-    var _ref$order = _ref.order;
-    var order = _ref$order === undefined ? 6 : _ref$order;
-    var _ref$debug = _ref.debug;
-    var debug = _ref$debug === undefined ? false : _ref$debug;
-    var _ref$cmpFn = _ref.cmpFn;
-    var cmpFn = _ref$cmpFn === undefined ? function (a, b) {
+    var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
+        _ref$order = _ref.order,
+        order = _ref$order === undefined ? 6 : _ref$order,
+        _ref$debug = _ref.debug,
+        debug = _ref$debug === undefined ? false : _ref$debug,
+        _ref$cmpFn = _ref.cmpFn,
+        cmpFn = _ref$cmpFn === undefined ? function (a, b) {
       return a < b ? -1 : a > b ? 1 : 0;
     } : _ref$cmpFn;
 
@@ -54,19 +51,19 @@ var BPlusTree = (function () {
    * @return {{keys: values}|Keys[]|Values[]}
    */
 
+
   _createClass(BPlusTree, [{
     key: 'repr',
     value: function repr() {
-      var _ref2 = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
-
-      var _ref2$root = _ref2.root;
-      var root = _ref2$root === undefined ? this.tree : _ref2$root;
-      var _ref2$getKeys = _ref2.getKeys;
-      var getKeys = _ref2$getKeys === undefined ? false : _ref2$getKeys;
-      var _ref2$getValues = _ref2.getValues;
-      var getValues = _ref2$getValues === undefined ? false : _ref2$getValues;
-      var _ref2$descending = _ref2.descending;
-      var descending = _ref2$descending === undefined ? false : _ref2$descending;
+      var _ref2 = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
+          _ref2$root = _ref2.root,
+          root = _ref2$root === undefined ? this.tree : _ref2$root,
+          _ref2$getKeys = _ref2.getKeys,
+          getKeys = _ref2$getKeys === undefined ? false : _ref2$getKeys,
+          _ref2$getValues = _ref2.getValues,
+          getValues = _ref2$getValues === undefined ? false : _ref2$getValues,
+          _ref2$descending = _ref2.descending,
+          descending = _ref2$descending === undefined ? false : _ref2$descending;
 
       var tree = root;
       var result = getKeys || getValues ? [] : {};
@@ -77,13 +74,13 @@ var BPlusTree = (function () {
             walk(kids[i]);
           }
         } else if (node.t === 'leaf') {
-          for (var i = 0, nkl = node.k.length; i < nkl; i++) {
+          for (var _i = 0, nkl = node.k.length; _i < nkl; _i++) {
             if (getKeys) {
-              result.push(node.k[i]);
+              result.push(node.k[_i]);
             } else if (getValues) {
-              result.push(node.v[i]);
+              result.push(node.v[_i]);
             } else {
-              result[node.k[i]] = node.v[i];
+              result[node.k[_i]] = node.v[_i];
             }
           }
         }
@@ -109,16 +106,17 @@ var BPlusTree = (function () {
   }, {
     key: 'fetchRange',
     value: function fetchRange(lowerBound, upperBound) {
-      var _ref3 = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
-
-      var _ref3$descending = _ref3.descending;
-      var descending = _ref3$descending === undefined ? false : _ref3$descending;
+      var _ref3 = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {},
+          _ref3$descending = _ref3.descending,
+          descending = _ref3$descending === undefined ? false : _ref3$descending,
+          _ref3$limit = _ref3.limit,
+          limit = _ref3$limit === undefined ? 0 : _ref3$limit;
 
       var hi = upperBound;
       var lo = lowerBound;
-
       var result = [];
 
+      var count = 0;
       var leaf = this.fetch(lo, { getLeaf: true });
       if (!leaf) {
         // look for a new lower bound, which is quite slow
@@ -141,21 +139,32 @@ var BPlusTree = (function () {
         }
       }
 
+      if (!hi) {
+        // set to highest value
+        hi = leaf.k[leaf.k.length - 1];
+      }
+
       var index = leaf.k.indexOf(lo);
 
+      function exceeded() {
+        return limit > 0 && result.length >= limit;
+      }
+
       while (leaf.k[index] <= hi) {
+        if (exceeded()) // are we done?
+          break;
         if (this.cmpFn(leaf.k[index], hi) === 0) {
           // if key at current index is upper bound, concat all vals and stop
-          result.push(leaf.v[index]);
+          count = result.push(leaf.v[index]);
           break;
         }
         if (this.cmpFn(leaf.k[leaf.k.length - 1], hi) === 0) {
           // if last key is upper bound, concat all vals and stop
-          result.push(leaf.v.slice(index));
+          count = result.push(leaf.v.slice(index));
           break;
         } else if (this.cmpFn(leaf.k[leaf.k.length - 1], hi) === -1) {
           // if last key is smaller than upper bound, fetch next leaf and iterate
-          result.push(leaf.v.slice(index));
+          count = result.push(leaf.v.slice(index));
           if (leaf.n !== null) {
             leaf = this.fetch(leaf.n, { getLeaf: true });
             index = 0;
@@ -164,9 +173,9 @@ var BPlusTree = (function () {
           }
         } else {
           // if last key is bigger than upper bound, concat until upper bound
-          var i = index;
-          for (; leaf.k[i] <= hi; i++) {}
-          result.push(leaf.v.slice(0, i));
+          var _i2 = index;
+          for (; leaf.k[_i2] <= hi; _i2++) {}
+          count = result.push(leaf.v.slice(0, _i2));
           break;
         }
       }
@@ -181,6 +190,8 @@ var BPlusTree = (function () {
         result.reverse();
       }
 
+      if (limit > 0) return result.slice(0, limit);
+
       return result;
     }
 
@@ -194,10 +205,9 @@ var BPlusTree = (function () {
   }, {
     key: 'depth',
     value: function depth() {
-      var _ref4 = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
-
-      var _ref4$root = _ref4.root;
-      var root = _ref4$root === undefined ? this.tree : _ref4$root;
+      var _ref4 = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
+          _ref4$root = _ref4.root,
+          root = _ref4$root === undefined ? this.tree : _ref4$root;
 
       var tree = root;
       var d = 0;
@@ -218,10 +228,9 @@ var BPlusTree = (function () {
   }, {
     key: 'check',
     value: function check() {
-      var _ref5 = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
-
-      var _ref5$root = _ref5.root;
-      var root = _ref5$root === undefined ? this.tree : _ref5$root;
+      var _ref5 = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
+          _ref5$root = _ref5.root,
+          root = _ref5$root === undefined ? this.tree : _ref5$root;
 
       var depth = this.depth({ root: root });
 
@@ -256,10 +265,10 @@ var BPlusTree = (function () {
 
           assert(keysLength === kidsLength - 1, 'keys and kids don\'t correspond');
 
-          for (var i = 0; i < kidsLength; i++) {
-            var newLo = i === 0 ? lo : [node.k[i - 1]];
-            var newHi = i === keysLength ? hi : [node.k[i]];
-            checking(self, kids[i], currentDepth + 1, newLo, newHi);
+          for (var _i3 = 0; _i3 < kidsLength; _i3++) {
+            var newLo = _i3 === 0 ? lo : [node.k[_i3 - 1]];
+            var newHi = _i3 === keysLength ? hi : [node.k[_i3]];
+            checking(self, kids[_i3], currentDepth + 1, newLo, newHi);
           }
         } else if (node.t === 'leaf') {
           var v = node.v;
@@ -290,18 +299,17 @@ var BPlusTree = (function () {
   }, {
     key: 'fetch',
     value: function fetch(key) {
-      var _ref6 = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
-
-      var _ref6$root = _ref6.root;
-      var root = _ref6$root === undefined ? this.tree : _ref6$root;
-      var _ref6$getLeaf = _ref6.getLeaf;
-      var getLeaf = _ref6$getLeaf === undefined ? false : _ref6$getLeaf;
-      var _ref6$getPath = _ref6.getPath;
-      var getPath = _ref6$getPath === undefined ? false : _ref6$getPath;
+      var _ref6 = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {},
+          _ref6$root = _ref6.root,
+          root = _ref6$root === undefined ? this.tree : _ref6$root,
+          _ref6$getLeaf = _ref6.getLeaf,
+          getLeaf = _ref6$getLeaf === undefined ? false : _ref6$getLeaf,
+          _ref6$getPath = _ref6.getPath,
+          getPath = _ref6$getPath === undefined ? false : _ref6$getPath;
 
       var node = root;
 
-      var index = undefined;
+      var index = void 0;
       var path = [];
       while (node.t === 'branch') {
         index = 0;
@@ -319,7 +327,7 @@ var BPlusTree = (function () {
         path.push(index);
       }
 
-      for (var j = 0, kl = node.k.length; j < kl; j++) {
+      for (var j = 0, _kl = node.k.length; j < _kl; j++) {
         if (this.cmpFn(key, node.k[j]) === 0) {
           var val = node.v[j];
           if (getPath) {
@@ -343,19 +351,19 @@ var BPlusTree = (function () {
 
       // Find the leaf node for key, and the path down to it.
       while (node.t === 'branch') {
-        var _i = 0;
+        var _i4 = 0;
         var _found = false;
-        for (var _nkl = node.k.length; _i < _nkl; _i++) {
-          if (this.cmpFn(key, node.k[_i]) === -1) {
+        for (var _nkl = node.k.length; _i4 < _nkl; _i4++) {
+          if (this.cmpFn(key, node.k[_i4]) === -1) {
             _found = true;
             break;
           }
         }
         if (!_found) {
-          _i = node.k.length;
+          _i4 = node.k.length;
         }
-        path.push({ t: node.t, k: node.k, v: node.v, i: _i });
-        node = node.v[_i];
+        path.push({ t: node.t, k: node.k, v: node.v, i: _i4 });
+        node = node.v[_i4];
       }
 
       // Find the index for key in the leaf node.
@@ -545,7 +553,7 @@ var BPlusTree = (function () {
       }
 
       var valCount = fetched.leaf.v[keyIndex].length;
-      var removed = undefined;
+      var removed = void 0;
 
       // we only have one val, remove it together with its key
       if (valCount === 1 && keyIndex !== -1) {
@@ -618,10 +626,10 @@ var BPlusTree = (function () {
         if (leftSibling && leftSibling.k.length > this.minKeys) {
           // can borrow from left because it is more than half full
           canBorrowLeft = true;
-          var keyToBorrow = leftSibling.k.pop();
-          var valBorrowed = leftSibling.v.pop();
-          leaf.k.unshift(keyToBorrow);
-          leaf.v.unshift(valBorrowed);
+          var _keyToBorrow = leftSibling.k.pop();
+          var _valBorrowed = leftSibling.v.pop();
+          leaf.k.unshift(_keyToBorrow);
+          leaf.v.unshift(_valBorrowed);
           parent.k = parent.v.slice(1).map(function (o) {
             return o.k[0];
           });
@@ -632,7 +640,7 @@ var BPlusTree = (function () {
 
       if (!canBorrowRight && !canBorrowLeft) {
         var again = true;
-        var lastIndex = undefined;
+        var lastIndex = void 0;
         while (again) {
           parent = this._get(path);
           lastIndex = index;
@@ -667,14 +675,14 @@ var BPlusTree = (function () {
               parent.v[lastIndex] = this._mergeLeft(parent.v[lastIndex - 1], parent.v[lastIndex]);
               parent.v.splice(lastIndex, 1); // delete now merged sibling
             } else if (rightExists) {
-                if (!roomOnRight) {
-                  splitIndex = lastIndex;
-                }
-                // merging with right, deleting sibling
-                // node becomes (node merged with sibling)
-                parent.v[lastIndex] = this._mergeRight(parent.v[lastIndex + 1], parent.v[lastIndex]);
-                parent.v.splice(lastIndex + 1, 1); // delete now merged sibling
+              if (!roomOnRight) {
+                splitIndex = lastIndex;
               }
+              // merging with right, deleting sibling
+              // node becomes (node merged with sibling)
+              parent.v[lastIndex] = this._mergeRight(parent.v[lastIndex + 1], parent.v[lastIndex]);
+              parent.v.splice(lastIndex + 1, 1); // delete now merged sibling
+            }
             if (splitIndex !== false) {
               var branchToSplit = parent.v[splitIndex];
               var mid = this.minKeys;
@@ -696,15 +704,15 @@ var BPlusTree = (function () {
           // underpopulated root
           if (this.tree.v[index].v.length > this.maxKeys) {
             // need to split
-            var mid = this.minKeys;
-            var leftContent = this.tree.v[index].v.slice(0, mid);
-            var rightContent = this.tree.v[index].v.slice(mid);
-            var left = { t: 'branch', k: [leftContent[leftContent.length - 1].k[0]], v: leftContent };
-            var right = { t: 'branch', k: [rightContent[rightContent.length - 1].k[0]], v: rightContent };
+            var _mid = this.minKeys;
+            var _leftContent = this.tree.v[index].v.slice(0, _mid);
+            var _rightContent = this.tree.v[index].v.slice(_mid);
+            var _left = { t: 'branch', k: [_leftContent[_leftContent.length - 1].k[0]], v: _leftContent };
+            var _right = { t: 'branch', k: [_rightContent[_rightContent.length - 1].k[0]], v: _rightContent };
             this.tree.t = 'branch';
             this.tree.n = null;
-            this.tree.k = [right.v[0].k[0]];
-            this.tree.v = [left, right];
+            this.tree.k = [_right.v[0].k[0]];
+            this.tree.v = [_left, _right];
           } else {
             // need to hoist
             this.tree.t = 'leaf';
@@ -760,6 +768,6 @@ var BPlusTree = (function () {
   }]);
 
   return BPlusTree;
-})();
+}();
 
 module.exports = BPlusTree;
